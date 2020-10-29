@@ -1,0 +1,6 @@
+pyekonlib/__pycache__
+pyekonlib.egg-info
+.idea
+.pytest_cache
+build
+dist
