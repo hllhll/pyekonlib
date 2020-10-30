@@ -26,5 +26,8 @@ setuptools.setup(
         'Programming Language :: Python :: 3',
         'Programming Language :: Python :: 3.8',
     ],
+    install_requires=[
+        'hexdump'
+    ],
     python_requires='>=3.8',
 )
