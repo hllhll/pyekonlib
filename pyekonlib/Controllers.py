@@ -110,7 +110,7 @@ class ServerController(object):
 	async def startPeriodicTimeoutCheck(self):
 		if not self._startPeriodicTimeoutCheckStarted:
 			self._startPeriodicTimeoutCheckStarted = True
-			self._timeout_task = await self._createAsyncTask(self.doTimeoutChecks)
+			self._timeout_task = await self._createAsyncTask(self.doTimeoutChecks())
 
 	async def stopPeriodicTimeoutCheck(self):
 		self._startPeriodicTimeoutCheckStarted = False

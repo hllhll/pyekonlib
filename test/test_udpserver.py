@@ -17,7 +17,7 @@ async def hvacStatusRecived(deviceSession, state):
 
 async def myAIOCreateTask(task):
     loop = asyncio.get_event_loop()
-    asyncio_task = loop.create_task(task())
+    asyncio_task = loop.create_task(task)
 
 
 async def hvacConnected(deviceSession, firstState):
