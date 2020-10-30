@@ -37,7 +37,7 @@ class UDPServer(object):
         if self._started:
             return
         self._started = True
-        await self._createAsyncTaskFn(self.reciverTask)
+        await self._createAsyncTaskFn(self.reciverTask())
         await self._serverController.startPeriodicTimeoutCheck()
 
     async def stop(self):
