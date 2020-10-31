@@ -47,10 +47,10 @@ async def aio_main():
     while not devConnected:
         await asyncio.sleep(1)
     print("==========aio_main scenerio===========")
-    await ekonServer.sendNewState(newStateScenario)
+    """await ekonServer.sendNewState(newStateScenario)
     await asyncio.sleep(5)
     newStateScenario.fanSpeed = 1
-    await ekonServer.sendNewState(newStateScenario)
+    await ekonServer.sendNewState(newStateScenario)"""
     await asyncio.sleep(360)
 
 
