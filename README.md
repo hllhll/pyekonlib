@@ -33,13 +33,22 @@ SetDeviceUDPServer("deviceAddr", "serverAddr", serverPort)
 ```
 where `serverAddr` is the address of the machine running this lib's server
 and serverPort is the UDP port it's listening on
+
 ## Protocol
-Not all fields were identified, but enough was identified in order to parse
+Not all fields were identified, but enough was identified in order to 
+give basic meaning and parse incoming frames from the device, and forge 
+frames that would be understood by the device. Please tell if u have an
+idea about the contents of the fields that are not fully understood :P
+
 
 # Known issues
 - Device emulation is only slightly implemented - NOT WORKING
 - While development I've stumbled situations where device stops responding, please take note if this happens
   - Try to power-cycle the device, if not, hard-reset (button or `POST ?comand=restore` )  and pair with regular app to see that it's working
+- In Forward mode, using the Ekon/TC app, You may change settings of the HVAC, and it will ignore you \
+  This is due to the script pulling the device, and updating ekon's server before ekon server's sends out
+  the message to the device (or the `proxy` which is this lib). Increasing `SEND_HEARTBEAT_INTERVAL = 10` in the `ServerController`
+  might help with thad  
 
 # Code structure
 I've stuck to most of the code being async and roughly async-framework agnostic
@@ -50,6 +59,8 @@ I've stuck to most of the code being async and roughly async-framework agnostic
     receiving/sending using the specified callbacks.
   - Provides callback to the user when identifying new device and 
     the receiving of a new (or equally, old) state from the device   
+- Server - Abstracts mostly anything and gives out callbacks for device connection,
+  disconnection, and updates from the device, plus sending new state to the device.
 
 # Note from the developer
 I'm not a developer, I'm a security researcher, as such the code quality is probably poor
