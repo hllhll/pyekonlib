@@ -11,7 +11,6 @@ SO_ServerUpdateDeviceFrame = 0x10
 SO_ServerHeartbeeatFrame = 0x03
 
 _LOGGER = logging.getLogger(__name__)
-_LOGGER.setLevel(logging.DEBUG)
 
 
 class Device(object):
@@ -100,7 +99,6 @@ class ServerController(object):
 
 	async def doTimeoutChecks(self):
 		while self._startPeriodicTimeoutCheckStarted:
-			_LOGGER.debug("Server controller - doTimeoutChecks Iteration")
 			now = datetime.datetime.now()
 			for key in list(self._sessions.keys()):
 				s = self._sessions[key]

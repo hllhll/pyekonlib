@@ -3,7 +3,6 @@ import socket
 import logging
 
 _LOGGER = logging.getLogger(__name__)
-_LOGGER.setLevel(logging.DEBUG)
 
 class UDPServer(object):
     def __init__(self, bindingPort, serverId, onHvacConnected, onHvacTimeout, onDeviceChangeCallback, asyncSleepFn, createAsyncTaskFn, forward_endpoint = None):
@@ -52,7 +51,6 @@ class UDPServer(object):
 
     async def reciverTask(self):
         while not self._stopRequest:
-            _LOGGER.debug("UDPServer - reciverTask iteration")
             hasData = True
             try:
                 data, addr = self._sock.recvfrom(256)
