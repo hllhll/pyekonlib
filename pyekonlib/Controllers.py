@@ -2,11 +2,16 @@ from pyekonlib.Frames import *
 import datetime
 import hexdump
 from copy import copy
+import logging
+
 # asyncio is incredibly bad, found this package looks awesome and convinent!
 
 SO_F = 1
 SO_ServerUpdateDeviceFrame = 0x10
 SO_ServerHeartbeeatFrame = 0x03
+
+_LOGGER = logging.getLogger(__name__)
+_LOGGER.setLevel(logging.DEBUG)
 
 
 class Device(object):
@@ -90,11 +95,12 @@ class ServerController(object):
 	async def sendHeartbeats(self):
 		for _ in self._sessions:
 			await self.sendData( ServerHeartbeatFrame(self.serverId).toBytes())
-			pass
+
 		self._lastHeartbeatSentTime = datetime.datetime.now()
 
 	async def doTimeoutChecks(self):
 		while self._startPeriodicTimeoutCheckStarted:
+			_LOGGER.debug("Server controller - doTimeoutChecks Iteration")
 			now = datetime.datetime.now()
 			for key in list(self._sessions.keys()):
 				s = self._sessions[key]

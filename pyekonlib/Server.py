@@ -1,9 +1,13 @@
 from pyekonlib.Controllers import ServerController
 import socket
+import logging
 
+_LOGGER = logging.getLogger(__name__)
+_LOGGER.setLevel(logging.DEBUG)
 
 class UDPServer(object):
     def __init__(self, bindingPort, serverId, onHvacConnected, onHvacTimeout, onDeviceChangeCallback, asyncSleepFn, createAsyncTaskFn, forward_endpoint = None):
+        _LOGGER.debug("Creating UDPServer")
         self._addressPair = ("0.0.0.0", bindingPort)
         self._serverId = serverId
         self._onDeviceChangeCallback = onDeviceChangeCallback
@@ -34,6 +38,7 @@ class UDPServer(object):
         self._peer = ("0.0.0.0", 1)
 
     async def start(self):
+        _LOGGER.info("Starting UDP Server reciver task and periodicTimeoutCheck")
         if self._started:
             return
         self._started = True
@@ -41,11 +46,13 @@ class UDPServer(object):
         await self._serverController.startPeriodicTimeoutCheck()
 
     async def stop(self):
+        _LOGGER.info("Stopping UDP Server reciver task and periodicTimeoutCheck")
         self._stopRequest = True
         await self._serverController.stopPeriodicTimeoutCheck()
 
     async def reciverTask(self):
         while not self._stopRequest:
+            _LOGGER.debug("UDPServer - reciverTask iteration")
             hasData = True
             try:
                 data, addr = self._sock.recvfrom(256)
@@ -74,11 +81,13 @@ class UDPServer(object):
         self._started = False
 
     async def receivedDeviceKey(self, srvController, deviceSession):
+        _LOGGER.debug("UDPServer - receivedDeviceKey")
         # For this use case, only receiving the device key / id doesnt really matter,
         # Session was already setup by the controller
         pass
 
     async def deviceData(self, srvController, deviceSession, airconState):
+        _LOGGER.debug("UDPServer - Got data from device")
         if deviceSession.firstState:
             deviceSession.firstState = False
             # For more simpler interfacing, I define connection as established only after I have the
@@ -94,9 +103,11 @@ class UDPServer(object):
             print ("NoChange.")"""
 
     async def deviceTimeout(self, srvController, deviceSession):
+        _LOGGER.debug("UDPServer - device timeout")
         await self._onHvacTimeout(deviceSession)
 
     async def sendData(self, data):
+        _LOGGER.debug("UDPServer - Sending data to device")
         self._sock.sendto(data, self._peer)
 
     async def sendNewState(self, state):
