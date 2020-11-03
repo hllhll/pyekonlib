@@ -109,7 +109,7 @@ class ServerController(object):
 			if len(self._sessions.keys()) > 0:
 				if (now-self._lastHeartbeatSentTime).seconds > ServerController.SEND_HEARTBEAT_INTERVAL:
 					await self.sendHeartbeats()
-			await self._asyncSleep(1) # curio.sleep(1)
+			await self._asyncSleep(1)
 
 	async def startPeriodicTimeoutCheck(self):
 		if not self._startPeriodicTimeoutCheckStarted:
