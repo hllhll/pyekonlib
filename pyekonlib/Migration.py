@@ -4,8 +4,8 @@ import json
 
 def sendCommand(deviceAddr, command, postData):
     url = "http://%s/config?command=%s" % (deviceAddr, command)
-    headers = {'user-agent': 'LuaSocket 2.0.2'}
-    r = requests.post(url, headers=headers, data=json.dumps(postData))
+    headers = {'User-Agent': 'LuaSocket 2.0.2', 'Content-Type': 'application/json; charset=utf-8', 'Host': "1.1.1.1"}
+    r = requests.post(url, headers=headers, data=json.dumps(postData, separators=(',', ':')))
     return r.status_code == requests.codes.ok
 
 
