@@ -38,8 +38,8 @@ def emptyFn(dummy1=None, dummy2=None, dummy3=None):
 
 
 class ServerController(object):
-	DEVICE_TIMEOUT=60 #s
-	SEND_HEARTBEAT_INTERVAL = 10
+	DEVICE_TIMEOUT=120 #s
+	SEND_HEARTBEAT_INTERVAL = 15
 
 	# For interoprability with different async framework, we require some functions to create task and sleep
 	def __init__(self, createAsyncTask, asyncSleep, serverId=0x9C400008):
@@ -93,7 +93,7 @@ class ServerController(object):
 
 	async def sendHeartbeats(self):
 		for _ in self._sessions:
-			await self.sendData( ServerHeartbeatFrame(self.serverId).toBytes())
+			self._createAsyncTask(self.sendData( ServerHeartbeatFrame(self.serverId).toBytes()))
 
 		self._lastHeartbeatSentTime = datetime.datetime.now()
 
@@ -114,7 +114,7 @@ class ServerController(object):
 	async def startPeriodicTimeoutCheck(self):
 		if not self._startPeriodicTimeoutCheckStarted:
 			self._startPeriodicTimeoutCheckStarted = True
-			self._timeout_task = await self._createAsyncTask(self.doTimeoutChecks())
+			self._timeout_task = self._createAsyncTask(self.doTimeoutChecks())
 
 	async def stopPeriodicTimeoutCheck(self):
 		self._startPeriodicTimeoutCheckStarted = False

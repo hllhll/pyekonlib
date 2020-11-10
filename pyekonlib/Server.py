@@ -1,7 +1,7 @@
 from pyekonlib.Controllers import ServerController
 import socket
 import logging
-
+import asyncio
 _LOGGER = logging.getLogger(__name__)
 
 class UDPServer(object):
@@ -22,61 +22,72 @@ class UDPServer(object):
         self._serverController.onDeviceTimeout = self.deviceTimeout
         self._serverController.sendData = self.sendData
 
-        self._sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-        self._sock.bind(self._addressPair)
-        self._sock.setblocking(False)
-
         self._forward_endpoint = forward_endpoint
-        self._forward_sock = None
-        if self._forward_endpoint:
-            self._forward_sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-            self._forward_sock.setblocking(False)
-            self._forward_sock.bind(('0.0.0.0', 80))
 
         # TODO: Change this when supporting multiple devices
         self._peer = ("0.0.0.0", 1)
+
+        self._dev_transport = self._dev_protocol = None
+        self._srv_transport = self._srv_protocol = None
+
+    class EkonProtocolFactory:
+        def __init__(self, _sync_data_recived_fn):
+            self._sync_data_recived_fn = _sync_data_recived_fn
+            self._transport = None
+
+        def connection_made(self, transport):
+            self._transport = transport
+
+        def datagram_received(self, data, addr):
+            self._sync_data_recived_fn(data, addr)
+
+    #class EkonDeviceProtocolFactory:
+    #    def __init__(self, _sync_data_recived_fn):
 
     async def start(self):
         _LOGGER.info("Starting UDP Server reciver task and periodicTimeoutCheck")
         if self._started:
             return
         self._started = True
-        await self._createAsyncTaskFn(self.reciverTask())
+        # await self._createAsyncTaskFn(self.reciverTask())
+
+        # Get a reference to the event loop as we plan to use
+        # low-level APIs.
+        loop = asyncio.get_running_loop()
+
+        # One protocol instance will be created to serve all
+        # client requests.
+        self._dev_transport, self._dev_protocol = await loop.create_datagram_endpoint(
+            lambda: UDPServer.EkonProtocolFactory( self.syncHandleRecivedDataFromDevice ),
+            local_addr=self._addressPair)
+
+        if self._forward_endpoint:
+            loop = asyncio.get_running_loop()
+            self._srv_transport, self._srv_protocol = await loop.create_datagram_endpoint(
+                lambda: UDPServer.EkonProtocolFactory( self.syncHandleRecivedDataFromServer ),
+                remote_addr=self._forward_endpoint)
+
+
         await self._serverController.startPeriodicTimeoutCheck()
 
     async def stop(self):
         _LOGGER.info("Stopping UDP Server reciver task and periodicTimeoutCheck")
-        self._stopRequest = True
+        #self._stopRequest = True
+        self._dev_transport.close()
+        if self._forward_endpoint:
+            self._srv_transport.close()
         await self._serverController.stopPeriodicTimeoutCheck()
 
-    async def reciverTask(self):
-        while not self._stopRequest:
-            hasData = True
-            try:
-                data, addr = self._sock.recvfrom(256)
-            except BlockingIOError as e:
-                await self._sleepFn(1)
-                hasData = False
+    def syncHandleRecivedDataFromDevice(self, data, addr):
+        self._peer = addr
+        # Magic of sync->async
+        self._createAsyncTaskFn(self._serverController.processData(data))
+        if self._forward_endpoint:
+            # Send data to forwarding server
+            self._srv_transport.sendto(data, self._forward_endpoint)
 
-            if hasData:
-                self._peer = addr
-                await self._serverController.processData(data)
-                if self._forward_sock is not None:
-                    # Send data to forwarding server
-                    self._forward_sock.sendto(data, self._forward_endpoint)
-
-            # Check if has data from forwarded server and send to device
-            if self._forward_sock is not None:
-                hasData = True
-                try:
-                    data, addr = self._forward_sock.recvfrom(256)
-                except BlockingIOError as e:
-                    hasData = False
-
-                if hasData:
-                    self._forward_sock.sendto(data, self._peer)
-        await self._serverController.stopPeriodicTimeoutCheck()
-        self._started = False
+    def syncHandleRecivedDataFromServer(self, data, addr):
+        self._dev_transport.sendto(data, self._peer)
 
     async def receivedDeviceKey(self, srvController, deviceSession):
         _LOGGER.debug("UDPServer - receivedDeviceKey")
@@ -106,7 +117,8 @@ class UDPServer(object):
 
     async def sendData(self, data):
         _LOGGER.debug("UDPServer - Sending data to device")
-        self._sock.sendto(data, self._peer)
+        # self._sock.sendto(data, self._peer)
+        self._dev_transport.sendto(data, self._peer)
 
     async def sendNewState(self, state):
         await self._serverController.updateDeviceState(self._serverController.getCurrentSession(), state)
