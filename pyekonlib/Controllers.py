@@ -42,7 +42,7 @@ class ServerController(object):
 	SEND_HEARTBEAT_INTERVAL = 15
 
 	# For interoprability with different async framework, we require some functions to create task and sleep
-	def __init__(self, createAsyncTask, asyncSleep, serverId=0x9C400008):
+	def __init__(self, createAsyncTask, callLaterFn, serverId=0x9C400008):
 		# This is sort of a guess that this is a server id
 		self.serverId = serverId
 		self._sessions = {}
@@ -54,7 +54,7 @@ class ServerController(object):
 		self._startPeriodicTimeoutCheckStarted = False
 		self._timeout_task = None
 		self._createAsyncTask = createAsyncTask
-		self._asyncSleep = asyncSleep
+		self._callLaterFn = callLaterFn
 		self._dummy = 0
 
 	def getCurrentSession(self):
@@ -97,24 +97,26 @@ class ServerController(object):
 
 		self._lastHeartbeatSentTime = datetime.datetime.now()
 
-	async def doTimeoutChecks(self):
-		while self._startPeriodicTimeoutCheckStarted:
-			now = datetime.datetime.now()
-			for key in list(self._sessions.keys()):
-				s = self._sessions[key]
-				dt = now-s.lastMsgTime
-				if dt.seconds > ServerController.DEVICE_TIMEOUT:
-					await self.onDeviceTimeout(self, s)
-					del self._sessions[key]
-			if len(self._sessions.keys()) > 0:
-				if (now-self._lastHeartbeatSentTime).seconds > ServerController.SEND_HEARTBEAT_INTERVAL:
-					await self.sendHeartbeats()
-			await self._asyncSleep(1)
+	def doTimeoutChecks(self):
+		# In spite of what you think, it's not recursion
+		if self._startPeriodicTimeoutCheckStarted:
+			self._timeout_task = self._callLaterFn(1, self.doTimeoutChecks)
+
+		now = datetime.datetime.now()
+		for key in list(self._sessions.keys()):
+			s = self._sessions[key]
+			dt = now-s.lastMsgTime
+			if dt.seconds > ServerController.DEVICE_TIMEOUT:
+				self._createAsyncTask( self.onDeviceTimeout(self, s) )
+				del self._sessions[key]
+		if len(self._sessions.keys()) > 0:
+			if (now-self._lastHeartbeatSentTime).seconds > ServerController.SEND_HEARTBEAT_INTERVAL:
+				self._createAsyncTask(  self.sendHeartbeats() )
 
 	async def startPeriodicTimeoutCheck(self):
 		if not self._startPeriodicTimeoutCheckStarted:
 			self._startPeriodicTimeoutCheckStarted = True
-			self._timeout_task = self._createAsyncTask(self.doTimeoutChecks())
+			self._timeout_task = self._callLaterFn(1, self.doTimeoutChecks)
 
 	async def stopPeriodicTimeoutCheck(self):
 		self._startPeriodicTimeoutCheckStarted = False

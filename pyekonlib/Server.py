@@ -5,18 +5,18 @@ import asyncio
 _LOGGER = logging.getLogger(__name__)
 
 class UDPServer(object):
-    def __init__(self, bindingPort, serverId, onHvacConnected, onHvacTimeout, onDeviceChangeCallback, asyncSleepFn, createAsyncTaskFn, forward_endpoint = None):
+    def __init__(self, bindingPort, serverId, onHvacConnected, onHvacTimeout, onDeviceChangeCallback, callLaterFn, createAsyncTaskFn, forward_endpoint = None):
         _LOGGER.debug("Creating UDPServer")
         self._addressPair = ("0.0.0.0", bindingPort)
         self._serverId = serverId
         self._onDeviceChangeCallback = onDeviceChangeCallback
-        self._sleepFn = asyncSleepFn
+        self._callLaterFn = callLaterFn
         self._createAsyncTaskFn = createAsyncTaskFn
         self._onHvacConnected = onHvacConnected
         self._onHvacTimeout = onHvacTimeout
         self._started = False
         self._stopRequest = False
-        self._serverController = ServerController(createAsyncTaskFn, asyncSleepFn)
+        self._serverController = ServerController(createAsyncTaskFn, callLaterFn)
         self._serverController.onReceivedDeviceKey = self.receivedDeviceKey
         self._serverController.onDeviceData = self.deviceData
         self._serverController.onDeviceTimeout = self.deviceTimeout
