@@ -97,7 +97,7 @@ class ServerController(object):
 
 		self._lastHeartbeatSentTime = datetime.datetime.now()
 
-	def doTimeoutChecks(self):
+	def doTimeoutChecks(self, args=None):
 		# In spite of what you think, it's not recursion
 		if self._startPeriodicTimeoutCheckStarted:
 			self._timeout_task = self._callLaterFn(1, self.doTimeoutChecks)
