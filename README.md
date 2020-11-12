@@ -24,8 +24,9 @@ Host: 1.1.1.1
 Yup, the communication is connection-less UDP.
 With the `client` we can instruct the device to communicate with are own crafted server,
 implemented by this library, reside on arbitrary ip address.
+**The entire request, should be sent in a single send() call**, thus any python http library for curl request would probably won't suffice
 
-This can be done by
+This can be performed by the library
 ```
 from pyekonlib.Migration import SetDeviceUDPServer
 
