@@ -29,6 +29,12 @@ async def hvacTimeout(deviceSession):
     print("Disconnected")
     devConnected = False
 
+# remember that call later accept sync cb
+def callLater(time, func):
+    event_loop = asyncio.get_event_loop()
+    event_loop.call_later(time, func)
+
+
 import socket
 async def aio_main():
 # Tadiran connect
@@ -37,7 +43,7 @@ async def aio_main():
     # Airconet +
     """ekonServer = UDPServer(6343, 0x9C400008, got_new_hvac_status, asyncio.sleep, myAIOCreateTask,
                            ("3.137.73.173", 6343))"""
-    ekonServer = UDPServer(6343, 0x9C400008, hvacConnected, hvacTimeout, hvacStatusRecived, asyncio.sleep, myAIOCreateTask, ("3.137.73.173", 6343))
+    ekonServer = UDPServer(6343, 0x9C400008, hvacConnected, hvacTimeout, hvacStatusRecived, callLater, myAIOCreateTask, ("3.137.73.173", 6343))
     newStateScenario = AirconStateData(onoff=True, mode=AirconMode.Cool, targetTemp=220, currentTemp=220, fanSpeed=2)
     await ekonServer.start()
 
