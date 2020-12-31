@@ -1,7 +1,6 @@
 # pyekonlib
 
 This is a package that implements Ekon/Connect/Airconet+ communication protocol with the wireless HVAC Controller.
-[Github-flavored Markdown](https://github.com/hllhll/pyekon)
 
 # How device communication works
 ## AP association to the Wifi network
@@ -43,13 +42,14 @@ idea about the contents of the fields that are not fully understood :P
 
 
 # Known issues
-- Device emulation is only slightly implemented - NOT WORKING
-- While development I've stumbled situations where device stops responding, please take note if this happens
-  - Try to power-cycle the device, if not, hard-reset (button or `POST ?comand=restore` )  and pair with regular app to see that it's working
 - In Forward mode, using the Ekon/TC app, You may change settings of the HVAC, and it will ignore you \
   This is due to the script pulling the device, and updating ekon's server before ekon server's sends out
   the message to the device (or the `proxy` which is this lib). Increasing `SEND_HEARTBEAT_INTERVAL = 10` in the `ServerController`
   might help with thad  
+- ~~While development I've stumbled situations where device stops responding, please take note if this happens~~
+  - Try to power-cycle the device, if not, hard-reset (button or `POST ?comand=restore` )  and pair with regular app to see that it's working
+  - **Havn't encountered in a while, this is probobly no longer an issue.**
+- Should't matter to most of you: Device emulation (I.E. Simulating a device) is only slightly implemented - NOT WORKING
 
 # Code structure
 I've stuck to most of the code being async and roughly async-framework agnostic
