@@ -6,6 +6,7 @@ StartOfFrame = 1
 # FrameType
 FT_ServerUpdateDeviceFrame = 0x10
 FT_ServerHeartbeatFrame = 0x03
+FT_ServerHeartonOffFrame = 0x06
 FT_DeviceHeartbeatFrame = 0
 FT_DeviceStateFrame = 3
 
@@ -72,6 +73,27 @@ class ServerHeartbeatFrame(ServerFrame):
 
 		data.append( (cs>>8)&0xff )
 		data.append( (cs)&0xff )
+		return data
+
+class ServerTurnOnOffFrame(ServerFrame):
+	def __init__(self, on=False):
+		self._number = 0x9c40
+		self.on = on
+		super().__init__()
+
+	def toBytes(self):
+		# 01 06 9C 40 00 55   66 71
+		# 01 06 numbe onoff cs cs
+		format_s = ">BBHH"
+		on_val = 0xAA # Off
+		if self.on:
+			on_val = 0x55
+		data = struct.pack(format_s, StartOfFrame, FT_ServerHeartonOffFrame, self._number, on_val)
+		cs = crc16(data)
+		data = bytearray(data)
+
+		data.append( (cs>>8) & 0xff )
+		data.append( (cs) & 0xff )
 		return data
 
 class ServerUpdateDeviceFrame(ServerFrame):

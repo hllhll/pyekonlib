@@ -122,6 +122,10 @@ class ServerController(object):
 		self._startPeriodicTimeoutCheckStarted = False
 		# self._timeout_task.cancel()
 
+	async def turnOff(self, deviceSession):
+		data = ServerTurnOnOffFrame(on=False).toBytes()
+		await self.sendData(data)
+
 	async def updateDeviceState(self, deviceSession, newDeviceState):
 		data = ServerUpdateDeviceFrame(newDeviceState).toBytes()
 		await self.sendData(data)

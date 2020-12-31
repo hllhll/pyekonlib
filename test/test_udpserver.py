@@ -5,6 +5,7 @@ from _ast import Set
 from pyekonlib import *
 from pyekonlib.Server import UDPServer
 from pyekonlib.Migration import SetDeviceUDPServer
+from pyekonlib.Frames import *
 import asyncio
 import hexdump
 
@@ -44,20 +45,26 @@ async def aio_main():
     """ekonServer = UDPServer(6343, 0x9C400008, got_new_hvac_status, asyncio.sleep, myAIOCreateTask,
                            ("3.137.73.173", 6343))"""
     ekonServer = UDPServer(6343, 0x9C400008, hvacConnected, hvacTimeout, hvacStatusRecived, callLater, myAIOCreateTask, ("3.137.73.173", 6343))
-    newStateScenario = AirconStateData(onoff=True, mode=AirconMode.Cool, targetTemp=220, currentTemp=220, fanSpeed=2)
+    newStateScenario = AirconStateData(onoff=True, mode=AirconMode.Fan, targetTemp=220, currentTemp=220, fanSpeed=1)
     await ekonServer.start()
 
+    print("Turn off frame")
+    hexdump.hexdump( ServerTurnOnOffFrame(False).toBytes() )
+    print("Turn on frame")
+    hexdump.hexdump( ServerTurnOnOffFrame(True).toBytes() )
     try:
         SetDeviceUDPServer("192.168.1.20", "192.168.1.10", 6343)
     except socket.error as e:
         print(e)
 
-    await asyncio.sleep(1)
-    print("==========aio_main scenerio===========")
-    """await ekonServer.sendNewState(newStateScenario)
     await asyncio.sleep(5)
-    newStateScenario.fanSpeed = 1
-    await ekonServer.sendNewState(newStateScenario)"""
+    print("==========aio_main scenerio===========")
+    await ekonServer.sendNewState(newStateScenario)
+    await asyncio.sleep(5)
+    print("Turning off")
+    await ekonServer.turnOff()
+    #newStateScenario.fanSpeed = 1
+    #await ekonServer.sendNewState(newStateScenario)
     await asyncio.sleep(7200)
 
 

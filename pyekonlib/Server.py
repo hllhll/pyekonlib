@@ -123,5 +123,6 @@ class UDPServer(object):
     async def sendNewState(self, state):
         await self._serverController.updateDeviceState(self._serverController.getCurrentSession(), state)
 
-
+    async def turnOff(self):
+        await self._serverController.turnOff(self._serverController.getCurrentSession())
 
