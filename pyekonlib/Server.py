@@ -5,18 +5,25 @@ import asyncio
 _LOGGER = logging.getLogger(__name__)
 
 class UDPServer(object):
-    def __init__(self, bindingPort, serverId, onHvacConnected, onHvacTimeout, onDeviceChangeCallback, callLaterFn, createAsyncTaskFn, forward_endpoint = None):
+    def __init__(self, bindingPort, serverId,
+                 onHvacConnected,
+                 onHvacTimeout,
+                 onDeviceChangeCallback,
+                 callLaterFn,
+                 createAsyncTaskFromThreadFn,
+                 createAsyncTaskFromEventLoopFn,
+                 forward_endpoint = None):
         _LOGGER.debug("Creating UDPServer")
         self._addressPair = ("0.0.0.0", bindingPort)
         self._serverId = serverId
         self._onDeviceChangeCallback = onDeviceChangeCallback
         self._callLaterFn = callLaterFn
-        self._createAsyncTaskFn = createAsyncTaskFn
+        self._createAsyncTaskFromThreadFn = createAsyncTaskFromThreadFn
         self._onHvacConnected = onHvacConnected
         self._onHvacTimeout = onHvacTimeout
         self._started = False
         self._stopRequest = False
-        self._serverController = ServerController(createAsyncTaskFn, callLaterFn)
+        self._serverController = ServerController( createAsyncTaskFromEventLoopFn , callLaterFn)
         self._serverController.onReceivedDeviceKey = self.receivedDeviceKey
         self._serverController.onDeviceData = self.deviceData
         self._serverController.onDeviceTimeout = self.deviceTimeout
@@ -56,6 +63,8 @@ class UDPServer(object):
         loop = asyncio.get_running_loop()
 
         # One protocol instance will be created to serve all
+        # Behind the scene this is actually implemented as a thread, so calls to asyncio functions
+        # Should be considered from a thread context
         # client requests.
         self._dev_transport, self._dev_protocol = await loop.create_datagram_endpoint(
             lambda: UDPServer.EkonProtocolFactory( self.syncHandleRecivedDataFromDevice ),
@@ -78,14 +87,16 @@ class UDPServer(object):
             self._srv_transport.close()
         await self._serverController.stopPeriodicTimeoutCheck()
 
+    # This is run in the thread created by the ProtocolFactory
     def syncHandleRecivedDataFromDevice(self, data, addr):
         self._peer = addr
         # Magic of sync->async
-        self._createAsyncTaskFn(self._serverController.processData(data))
+        self._createAsyncTaskFromThreadFn(self._serverController.processData(data))
         if self._forward_endpoint:
             # Send data to forwarding server
             self._srv_transport.sendto(data, self._forward_endpoint)
 
+    # This is run in the thread created by the ProtocolFactory
     def syncHandleRecivedDataFromServer(self, data, addr):
         self._dev_transport.sendto(data, self._peer)
 

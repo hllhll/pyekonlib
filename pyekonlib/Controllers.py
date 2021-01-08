@@ -42,7 +42,7 @@ class ServerController(object):
 	SEND_HEARTBEAT_INTERVAL = 15
 
 	# For interoprability with different async framework, we require some functions to create task and sleep
-	def __init__(self, createAsyncTask, callLaterFn, serverId=0x9C400008):
+	def __init__(self, createAsyncTaskFromEventLoop, callLaterFn, serverId=0x9C400008):
 		# This is sort of a guess that this is a server id
 		self.serverId = serverId
 		self._sessions = {}
@@ -53,7 +53,7 @@ class ServerController(object):
 		self._lastHeartbeatSentTime = datetime.datetime(1,1,1,0,0,0,0)
 		self._startPeriodicTimeoutCheckStarted = False
 		self._timeout_task = None
-		self._createAsyncTask = createAsyncTask
+		self._createAsyncTaskFromEventLoop = createAsyncTaskFromEventLoop
 		self._callLaterFn = callLaterFn
 		self._dummy = 0
 
@@ -62,6 +62,7 @@ class ServerController(object):
 			return self._sessions[list(self._sessions.keys())[0]]
 		return None
 
+	# This has to be called in the event loop
 	async def processData(self, data):
 		frame = DeviceFrame.fromData(data)
 		dev = False
@@ -91,12 +92,14 @@ class ServerController(object):
 
 		# Todo, check if dev._lastState differs frame._state
 
+	# This has to be called in the event loop
 	async def sendHeartbeats(self):
 		for _ in self._sessions:
-			self._createAsyncTask(self.sendData( ServerHeartbeatFrame(self.serverId).toBytes()))
+			self._createAsyncTaskFromEventLoop(self.sendData( ServerHeartbeatFrame(self.serverId).toBytes()))
 
 		self._lastHeartbeatSentTime = datetime.datetime.now()
 
+	# This has to be called in the event loop, however this doesn't necessarily needs to be async since it doesn't do IO
 	def doTimeoutChecks(self, args=None):
 		# In spite of what you think, it's not recursion
 		if self._startPeriodicTimeoutCheckStarted:
@@ -107,11 +110,11 @@ class ServerController(object):
 			s = self._sessions[key]
 			dt = now-s.lastMsgTime
 			if dt.seconds > ServerController.DEVICE_TIMEOUT:
-				self._createAsyncTask( self.onDeviceTimeout(self, s) )
+				self._createAsyncTaskFromEventLoop( self.onDeviceTimeout(self, s) )
 				del self._sessions[key]
 		if len(self._sessions.keys()) > 0:
 			if (now-self._lastHeartbeatSentTime).seconds > ServerController.SEND_HEARTBEAT_INTERVAL:
-				self._createAsyncTask(  self.sendHeartbeats() )
+				self._createAsyncTaskFromEventLoop(  self.sendHeartbeats() )
 
 	async def startPeriodicTimeoutCheck(self):
 		if not self._startPeriodicTimeoutCheckStarted:
