@@ -5,7 +5,7 @@ with open("README.md", "r") as fh:
 
 setuptools.setup(
     name="pyekonlib",
-    version="0.0.1",
+    version="0.3",
     author="Hillel ch.",
     #author_email="author@example.com",
     description="Server and client modules for Ekon/Connect/Airconet+",
@@ -25,9 +25,6 @@ setuptools.setup(
         'License :: OSI Approved :: MIT License',  # Again, pick a license
         'Programming Language :: Python :: 3',
         'Programming Language :: Python :: 3.8',
-    ],
-    install_requires=[
-        'hexdump'
     ],
     python_requires='>=3.8',
 )
