@@ -20,6 +20,7 @@ def myAIOCreateTask(task):
     loop = asyncio.get_event_loop()
     asyncio_task = loop.create_task(task)
 
+
 async def hvacConnected(deviceSession, firstState):
     global devConnected
     print("Device connected! " + hexdump.dump(deviceSession.device.deviceData)  + " state: ")
@@ -38,13 +39,14 @@ def callLater(time, func):
 
 import socket
 async def aio_main():
-# Tadiran connect
-    """ekonServer = UDPServer(6343, 0x9C400008, got_new_hvac_status, asyncio.sleep, myAIOCreateTask,
-                           ("185.28.152.215", 6343))"""
-    # Airconet +
-    """ekonServer = UDPServer(6343, 0x9C400008, got_new_hvac_status, asyncio.sleep, myAIOCreateTask,
-                           ("3.137.73.173", 6343))"""
-    ekonServer = UDPServer(6343, 0x9C400008, hvacConnected, hvacTimeout, hvacStatusRecived, callLater, myAIOCreateTask, ("3.137.73.173", 6343))
+    ekonServer = UDPServer(6343, 0x9C400008,
+                           hvacConnected,
+                           hvacTimeout,
+                           hvacStatusRecived,
+                           callLater,
+                           myAIOCreateTask, # createAsyncTaskFromThreadFn
+                           asyncio.create_task, # createAsyncTaskFromEventLoopFn,
+                           ("3.137.73.173", 6343))
     newStateScenario = AirconStateData(onoff=True, mode=AirconMode.Fan, targetTemp=220, currentTemp=220, fanSpeed=1)
     await ekonServer.start()
 
@@ -59,10 +61,10 @@ async def aio_main():
 
     await asyncio.sleep(5)
     print("==========aio_main scenerio===========")
-    await ekonServer.sendNewState(newStateScenario)
+    #await ekonServer.sendNewState(newStateScenario)
     await asyncio.sleep(5)
-    print("Turning off")
-    await ekonServer.turnOff()
+    #print("Turning off")
+    #await ekonServer.turnOff()
     #newStateScenario.fanSpeed = 1
     #await ekonServer.sendNewState(newStateScenario)
     await asyncio.sleep(7200)
