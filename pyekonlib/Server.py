@@ -1,10 +1,15 @@
 from pyekonlib.Controllers import ServerController
 import socket
+import time
+import threading
 import logging
 import asyncio
 _LOGGER = logging.getLogger(__name__)
 
 class UDPServer(object):
+    # Todo, implement logging maybe with
+    # logging.getLogger("asyncio").setLevel(logging.DEBUG)
+
     def __init__(self, bindingPort, serverId,
                  onHvacConnected,
                  onHvacTimeout,
@@ -137,3 +142,37 @@ class UDPServer(object):
     async def turnOff(self):
         await self._serverController.turnOff(self._serverController.getCurrentSession())
 
+    async def turnOn(self):
+        await self._serverController.turnOn(self._serverController.getCurrentSession())
+
+
+# Since python suck in protecting bad programmers writing bad code (such as me)
+# in a way that the code misuses the async framework and screws up the common event loop,
+# I've decided to implement this wrapper which allocates a different event loop for this integration
+# effectively, rendering asyncio useless and spawning another thread.
+
+class UDPServerLoopIndependent(UDPServer):
+
+    def __init__(self, bindingPort, serverId,
+            onHvacConnected,  # note, onXXX are still async functionsף They will be called from my event loop
+                              # Which should be sufficient since HA, for example, explicitlly uses it's own loop to .. do stuff.
+            onHvacTimeout,
+            onDeviceChangeCallback,
+            forward_endpoint = None):
+
+        self.el = asyncio.new_event_loop()
+        _workThread = threading.Thread(target=self.el.run_forever)
+        _workThread.start()
+
+        super().__init__( bindingPort, serverId,
+            onHvacConnected,
+            onHvacTimeout,
+            onDeviceChangeCallback,
+            self.el.call_later,
+            self.my_create_async_task,
+            self.el.create_task,
+            forward_endpoint)
+
+    # Create async task from a thread context
+    def my_create_async_task(self, corutine):
+        return asyncio.run_coroutine_threadsafe(corutine, self.el)
