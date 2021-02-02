@@ -5,7 +5,7 @@ with open("README.md", "r") as fh:
 
 setuptools.setup(
     name="pyekonlib",
-    version="0.3",
+    version="0.4.2",
     author="Hillel ch.",
     #author_email="author@example.com",
     description="Server and client modules for Ekon/Connect/Airconet+",
