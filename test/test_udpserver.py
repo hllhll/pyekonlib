@@ -4,6 +4,7 @@ from _ast import Set
 
 from pyekonlib import *
 from pyekonlib.Server import UDPServer
+from pyekonlib.Server import UDPServerLoopIndependent
 from pyekonlib.Migration import SetDeviceUDPServer
 from pyekonlib.Frames import *
 import asyncio
@@ -39,14 +40,21 @@ def callLater(time, func):
 
 import socket
 async def aio_main():
-    ekonServer = UDPServer(6343, 0x9C400008,
+    """ekonServer = UDPServer(6343, 0x9C400008,
                            hvacConnected,
                            hvacTimeout,
                            hvacStatusRecived,
                            callLater,
                            myAIOCreateTask, # createAsyncTaskFromThreadFn
                            asyncio.create_task, # createAsyncTaskFromEventLoopFn,
+                           ("3.137.73.173", 6343))"""
+
+    ekonServer = UDPServerLoopIndependent(6343, 0x9C400008,
+                           hvacConnected,
+                           hvacTimeout,
+                           hvacStatusRecived,
                            ("3.137.73.173", 6343))
+
     newStateScenario = AirconStateData(onoff=True, mode=AirconMode.Fan, targetTemp=220, currentTemp=220, fanSpeed=1)
     await ekonServer.start()
 
@@ -56,15 +64,17 @@ async def aio_main():
     hexdump.hexdump( ServerTurnOnOffFrame(True).toBytes() )
     try:
         SetDeviceUDPServer("192.168.1.20", "192.168.1.10", 6343)
+
     except socket.error as e:
         print(e)
 
-    await asyncio.sleep(5)
+    await asyncio.sleep(10)
     print("==========aio_main scenerio===========")
     #await ekonServer.sendNewState(newStateScenario)
-    await asyncio.sleep(5)
-    #print("Turning off")
-    #await ekonServer.turnOff()
+    await ekonServer.turnOn()
+    await asyncio.sleep(3)
+    print("Turning off")
+    await ekonServer.turnOff()
     #newStateScenario.fanSpeed = 1
     #await ekonServer.sendNewState(newStateScenario)
     await asyncio.sleep(7200)
