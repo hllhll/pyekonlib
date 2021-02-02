@@ -32,7 +32,8 @@ from pyekonlib.Migration import SetDeviceUDPServer
 SetDeviceUDPServer("deviceAddr", "serverAddr", serverPort)
 ```
 where `serverAddr` is the address of the machine running this lib's server
-and serverPort is the UDP port it's listening on
+and serverPort is the UDP port it's listening on.
+If the device has connected already to a preconfigured server, it will connect to both the new `serverAddr` while also remaining connected to the old one. Upon restart it will connect to the new one only.
 
 ## Protocol
 Not all fields were identified, but enough was identified in order to 
