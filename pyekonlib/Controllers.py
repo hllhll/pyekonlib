@@ -128,6 +128,10 @@ class ServerController(object):
 		data = ServerTurnOnOffFrame(on=False).toBytes()
 		await self.sendData(data)
 
+	async def turnOn(self, deviceSession):
+		data = ServerTurnOnOffFrame(on=True).toBytes()
+		await self.sendData(data)
+
 	async def updateDeviceState(self, deviceSession, newDeviceState):
 		data = ServerUpdateDeviceFrame(newDeviceState).toBytes()
 		await self.sendData(data)
